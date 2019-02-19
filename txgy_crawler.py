@@ -11,25 +11,28 @@ import xlwt
 FAIL_NUM = 0
 
 def deal_json(json_data, table, line_num):
+    line_count = 0
     for proj in json_data['plist']:
         try:
-            table.write(line_num, 2, proj['startTime'])
-            table.write(line_num, 3, proj['endTime'])
-            table.write(line_num, 4, proj['stat']['money']) #已获得钱数,需要除100
-            table.write(line_num, 5, proj['stat']['times']) #捐款人次
+            table.write(line_num, 1, proj['startTime'])
+            table.write(line_num, 2, proj['endTime'])
+            table.write(line_num, 3, proj['stat']['money']) #已获得钱数,需要除100
+            table.write(line_num, 4, proj['stat']['times']) #捐款人次
         except KeyError:
             FAIL_NUM = FAIL_NUM + 1
             break
         try:
-            table.write(line_num, 6, proj['stat']['quota_money']) #企业配额，需要除100
-            table.write(line_num, 7, proj['stat']['step_times']) 
-            table.write(line_num, 8, proj['stat']['together_donate_times']) 
-            table.write(line_num, 9, proj['stat']['together_create_times']) 
-            table.write(line_num, 10, proj['stat']['step_money']) 
-            table.write(line_num, 11, proj['stat']['needMoney']) #目标金额，需要除100
+            table.write(line_num, 5, proj['stat']['quota_money']) #企业配额，需要除100
+            table.write(line_num, 6, proj['stat']['step_times'])
+            table.write(line_num, 7, proj['stat']['together_donate_times'])
+            table.write(line_num, 8, proj['stat']['together_create_times'])
+            table.write(line_num, 9, proj['stat']['step_money'])
+            table.write(line_num, 10, proj['needMoney']) #目标金额，需要除100
         except KeyError:
-            continue
-            
+            print('fxxk')
+        line_count = line_count + 1
+        line_num = line_num + 1
+    return line_count
 
 # Request header.
 head = {
@@ -59,11 +62,11 @@ for s_status in status:
                 url = 'https://ssl.gongyi.qq.com/cgi-bin/WXSearchCGI?ptype=stat&s_status='\
                     + str(s_status) +'&s_tid='+str(s_tid) + '&p=' + str(s_page)
                 res = requests.get(url, headers = head).text
-                deal_json(json.loads(res[1:-1]), table, line_num)
+                line_count = deal_json(json.loads(res[1:-1]), table, line_num)
             except:
                 FAIL_NUM = FAIL_NUM + 1
                 continue
-            line_num = line_num + 1
+            line_num = line_num + line_count
         page_index = page_index + 1
         book.save('tmp' + str(s_status) + str(s_tid) + '.xls')
 print('Fail Num : ' + str(FAIL_NUM))
