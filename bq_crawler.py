@@ -21,7 +21,7 @@ head = {
 # Max book number of 'www.qu.la/book/number'.
 MAX_BOOK_NUM = 157000
 
-for number in range(1, 157000):
+for number in range(20794, 157000):
     url_book = 'https://www.qu.la/book/' + str(number) + '/'
     url_txt = 'https://www.qu.la/txt/' + str(number) + '/'
     res = requests.get(url_txt, headers = head).text
@@ -31,3 +31,4 @@ for number in range(1, 157000):
     book_status = re.findall(r'状 态：<span class="pd_r">(.*)</span>', res)[0]
     #print(res)
     print('编号: ' + str(number) + '书名: ' + book_name + '  类型: ' + book_type + ' ' + author + '  状态: ' + book_status)
+    #<span id="author">作者：长公</span>
