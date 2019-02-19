@@ -6,12 +6,30 @@ import json
 import sys
 import datetime
 import time
+import xlwt
 
-def deal_json(json_data, log_file):
+FAIL_NUM = 0
+
+def deal_json(json_data, table, line_num):
     for proj in json_data['plist']:
-        log_file.write('start time ' + proj['startTime'] + '\n')
-        log_file.write('end time ' + proj['endTime'] + '\n')
-        log_file.flush()
+        try:
+            table.write(line_num, 2, proj['startTime'])
+            table.write(line_num, 3, proj['endTime'])
+            table.write(line_num, 4, proj['stat']['money']) #已获得钱数,需要除100
+            table.write(line_num, 5, proj['stat']['times']) #捐款人次
+        except KeyError:
+            FAIL_NUM = FAIL_NUM + 1
+            break
+        try:
+            table.write(line_num, 6, proj['stat']['quota_money']) #企业配额，需要除100
+            table.write(line_num, 7, proj['stat']['step_times']) 
+            table.write(line_num, 8, proj['stat']['together_donate_times']) 
+            table.write(line_num, 9, proj['stat']['together_create_times']) 
+            table.write(line_num, 10, proj['stat']['step_money']) 
+            table.write(line_num, 11, proj['stat']['needMoney']) #目标金额，需要除100
+        except KeyError:
+            continue
+            
 
 # Request header.
 head = {
@@ -27,23 +45,25 @@ status = (1, 2, 3)
 # tid : 71--疾病救助, 72--救灾扶贫, 73--教育助学, 74--自然保护, 75--其他
 tid = (71, 72, 73, 74, 75)
 
-log_file = open('/tmp/suijianwei', mode = 'a')
+# pages : 各个项的最大页个数
+pages = (158, 31, 50, 11, 22, 1726, 286, 748, 132, 544, 678, 238, 311, 40, 186)
+page_index = 0
 for s_status in status:
     for s_tid in tid:
-        log_file.write(str(s_status) + " " + str(s_tid))
-        for s_page in range(1, 100):
-            url = 'https://ssl.gongyi.qq.com/cgi-bin/WXSearchCGI?ptype=stat&s_status='\
-                + str(s_status) +'&s_tid='+str(s_tid) + '&p=' + str(s_page)
-            res = requests.get(url, headers = head).text
-            deal_json(json.loads(res[1:-1]), log_file)         
-            '''
+        line_num = 1
+        book = xlwt.Workbook()
+        table = book.add_sheet(str(s_status)+"_"+str(s_tid), cell_overwrite_ok=True);
+        print(str(s_status)+" "+str(s_tid))
+        for s_page in range(1, pages[page_index]):
             try:
                 url = 'https://ssl.gongyi.qq.com/cgi-bin/WXSearchCGI?ptype=stat&s_status='\
                     + str(s_status) +'&s_tid='+str(s_tid) + '&p=' + str(s_page)
                 res = requests.get(url, headers = head).text
-                deal_json(json.loads(res[1:-1]), log_file)
+                deal_json(json.loads(res[1:-1]), table, line_num)
             except:
-                log_file.write('fxxk')
+                FAIL_NUM = FAIL_NUM + 1
                 continue
-            '''
-log_file.close()
+            line_num = line_num + 1
+        page_index = page_index + 1
+        book.save('tmp' + str(s_status) + str(s_tid) + '.xls')
+print('Fail Num : ' + str(FAIL_NUM))
